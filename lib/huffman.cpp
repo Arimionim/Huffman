@@ -82,7 +82,7 @@ namespace huffman {
     template<typename T>
     void read(std::istream &in, T &v) {
         in.read(reinterpret_cast<char *>(&v), sizeof(v));
-        if (in.gcount() < sizeof(v)) {
+        if (static_cast<size_t >(in.gcount()) < sizeof(v)) {
             error();
         }
     }
