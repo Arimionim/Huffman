@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <iomanip>
 #include "lib/huffman.h"
 
 void gen(unsigned int size, std::string const &dst) {
@@ -55,8 +56,22 @@ int main(int argc, char *argv[]){
     }
     for (unsigned int i = 0; i < argc - 1; i++){
         gen(cnt[i], "in.txt");
+
+        clock_t begin = clock();
         compress("in.txt", "out.txt");
+        clock_t end = clock();
+
+        std::cout << std::fixed << std::setprecision(3) << double(end - begin) / CLOCKS_PER_SEC
+                  << " s" << std::endl;
+
+        begin = clock();
         decompress("out.txt", "finish.txt");
+        end = clock();
+
+        std::cout << std::fixed << std::setprecision(3) << double(end - begin) / CLOCKS_PER_SEC
+                  << " s" << std::endl;
+
+
         check("in.txt", "finish.txt");
     }
 }

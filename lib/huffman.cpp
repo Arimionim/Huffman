@@ -1,6 +1,6 @@
 #include <iostream>
 #include "huffman.h"
-#include <map>
+#include <unordered_map>
 #include <fstream>
 
 
@@ -109,7 +109,7 @@ namespace huffman {
         huff_tree tree;
         tree.makeTable(freq, table);
 
-        std::map<std::string, unsigned char > map_table;
+        std::unordered_map<std::string, unsigned char > map_table;
         for (size_t i = 0; i < 256; i++) {
             if (freq[i] != 0) {
                 map_table[table[i]] = i;
