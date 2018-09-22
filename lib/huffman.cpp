@@ -2,16 +2,14 @@
 #include "huffman.h"
 #include <map>
 #include <fstream>
-
+#include <cstring>
 
 namespace huffman {
     void compress(std::istream &in, std::ostream &out) {
         unsigned int freq[256];
         unsigned char buf[BLOCK_SIZE];
 
-        for (int i = 0; i < 256; i++) {
-            freq[i] = 0;
-        }
+        std::memset(freq, 0, 256 * sizeof(uint32_t));
 
         unsigned int len, full_len = 0;
 
@@ -38,7 +36,7 @@ namespace huffman {
 
         for (size_t i = 0; i < 256; i++) {
             if (freq[i] > 0) {
-                out.put(static_cast<char>(i));
+                out.write(reinterpret_cast<const char *>(&i), sizeof(char));
                 out.write(reinterpret_cast<const char *>(&freq[i]), sizeof(freq[i]));
             }
         }
@@ -99,9 +97,8 @@ namespace huffman {
         unsigned int cnt_syb;
         read(in, cnt_syb);
         unsigned int freq[256];
-        for (int i = 0; i < 256; i++) {
-            freq[i] = 0;
-        }
+        std::memset(freq, 0, 256 * sizeof(uint32_t));
+
 
         for (unsigned int i = 0; i < cnt_syb; i++) {
             unsigned char symb;
