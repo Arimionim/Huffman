@@ -6,12 +6,12 @@
 
 namespace huffman {
     void compress(std::istream &in, std::ostream &out) {
-        unsigned int freq[256];
+        uint32_t freq[256];
         unsigned char buf[BLOCK_SIZE];
 
         std::memset(freq, 0, 256 * sizeof(uint32_t));
 
-        unsigned int len, full_len = 0;
+        uint32_t len, full_len = 0;
 
         do {
             (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE));
@@ -27,7 +27,7 @@ namespace huffman {
         huff_tree tree;
         tree.makeTable(freq, table);
 
-        unsigned int cnt_symb = 0;
+        uint32_t cnt_symb = 0;
         for (size_t i = 0; i < 256; i++) {
             cnt_symb += (freq[i] != 0);
         }
@@ -47,9 +47,9 @@ namespace huffman {
         in.seekg(0, std::ios::beg);
 
 
-        unsigned int tmp = 0;
-        unsigned int edge = 0;
-        unsigned int size = 0;
+        uint32_t tmp = 0;
+        uint32_t edge = 0;
+        uint32_t size = 0;
 
         do {
             (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE));
@@ -94,15 +94,15 @@ namespace huffman {
     }
 
     void decompress(std::istream &in, std::ostream &out) {
-        unsigned int cnt_syb;
+        uint32_t cnt_syb;
         read(in, cnt_syb);
-        unsigned int freq[256];
+        uint32_t freq[256];
         std::memset(freq, 0, 256 * sizeof(uint32_t));
 
 
-        for (unsigned int i = 0; i < cnt_syb; i++) {
+        for (uint32_t i = 0; i < cnt_syb; i++) {
             unsigned char symb;
-            unsigned int cnt;
+            uint32_t cnt;
             read(in, symb);
             read(in, cnt);
 
@@ -114,22 +114,22 @@ namespace huffman {
         huff_tree tree;
         tree.makeTable(freq, table);
         std::map<std::pair<int, int>, unsigned char> map_table;
-        for (unsigned int i = 0; i < 256; i++) {
+        for (uint32_t i = 0; i < 256; i++) {
             if (freq[i] != 0) {
                 map_table[table[i]] = static_cast<unsigned char>(i);
             }
         }
-        unsigned int siz;
+        uint32_t siz;
 
         read(in, siz);
 
         std::pair<int, int> bits = {0, 0};
 
         while (siz > 0) {
-            unsigned int buf[BLOCK_SIZE / 4];
+            uint32_t buf[BLOCK_SIZE / 4];
             in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE);
-            unsigned int len;
-            len = static_cast<unsigned int>(in.gcount());
+            uint32_t len;
+            len = static_cast<uint32_t>(in.gcount());
             
             if (len == 0) {
                 error();
