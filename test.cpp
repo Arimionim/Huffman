@@ -3,11 +3,12 @@
 #include <ctime>
 #include <iomanip>
 #include "lib/huffman.h"
+#include <vector>
 
 void gen(unsigned int size, std::string const &dst) {
     srand(static_cast<unsigned int>(time(NULL)));
     std::ofstream fout(dst, std::ios::out | std::ios::binary);
-    for (int i = 0; i < size; i++) {
+    for (unsigned int i = 0; i < size; i++) {
         fout << char(rand() % 256);
     }
 }
@@ -47,14 +48,14 @@ void decompress(std::string const & first, std::string const & second){
 }
 
 int main(int argc, char *argv[]){
-    unsigned int cnt[argc - 1];
-    for (size_t i = 1; i < argc; i++){
+    std::vector<unsigned int> cnt(argc - 1);
+    for (int i = 1; i < argc; i++){
         if (std::stoi(argv[i]) < 0){
             throw std::runtime_error("Negative input");
         }
         cnt[i - 1] = static_cast<unsigned int>(std::stoi(argv[i]));
     }
-    for (unsigned int i = 0; i < argc - 1; i++){
+    for (int i = 0; i < argc - 1; i++){
         gen(cnt[i], "in.txt");
 
         clock_t begin = clock();
