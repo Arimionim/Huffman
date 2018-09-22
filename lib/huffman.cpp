@@ -1,6 +1,6 @@
 #include <iostream>
 #include "huffman.h"
-#include <unordered_map>
+#include <map>
 #include <fstream>
 
 
@@ -25,7 +25,7 @@ namespace huffman {
             }
         } while (len != 0);
 
-        std::string table[256];
+        std::pair<int, int> table[256];
         huff_tree tree;
         tree.makeTable(freq, table);
 
@@ -45,36 +45,44 @@ namespace huffman {
 
         out.write(reinterpret_cast<const char *>(&full_len), sizeof(full_len));
 
-        std::string bits;
         in.clear();
         in.seekg(0, std::ios::beg);
+
+
+        unsigned int tmp = 0;
+        unsigned int edge = 0;
+        unsigned int size = 0;
 
         do {
             (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE));
             len = static_cast<size_t>(in.gcount());
-            unsigned int edge = 0;
-            for (size_t i = 0; i < len; i++) {
-                bits += table[buf[i]];
-            }
-            unsigned int tmp = 0;
 
-            for (size_t i = 0; i < bits.size(); ++i) {
-                tmp *= 2;
-                tmp += bits[i] == '1';
-                if ((i + 1) % 32 == 0) {
+            for (size_t i = 0; i < len; ++i) {
+                if (i == 69){
+                    i--;
+                    i++;
+                }
+                if (size + table[buf[i]].second <= 32){
+                    tmp <<= table[buf[i]].second;
+                    tmp += table[buf[i]].first;
+                    size += table[buf[i]].second;
+                }
+                else {
+                    tmp <<= (32 - size);
+                    if (size != 32)
+                        tmp += (table[buf[i]].first >> (table[buf[i]].second - (32 - size)));
+                    edge = table[buf[i]].second - (32 - size);
                     out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
-                    edge = i + 1;
+                    tmp = 0;
+                    for (size_t j = 0; j < edge; j++){
+                        tmp += table[buf[i]].first & (1 << j);
+                    }
+                    size = edge;
                 }
             }
-            bits = bits.substr(edge, bits.size() - edge);
         } while (len > 0);
-
-        if (!bits.empty()) {
-            unsigned int tmp = 0;
-            for (size_t i = 0; i < 32; i++) {
-                tmp *= 2;
-                tmp += i < bits.size() ? (bits[i] == '1') : 0;
-            }
+        if (size != 0){
+            tmp <<= (32 - size);
             out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
         }
     }
@@ -105,21 +113,21 @@ namespace huffman {
         }
 
 
-        std::string table[256];
+        std::pair<int, int> table[256];
         huff_tree tree;
         tree.makeTable(freq, table);
-
-        std::unordered_map<std::string, unsigned char > map_table;
-        for (size_t i = 0; i < 256; i++) {
+        std::map<std::pair<int, int>, unsigned char> map_table;
+        for (unsigned int i = 0; i < 256; i++) {
             if (freq[i] != 0) {
-                map_table[table[i]] = i;
+                map_table[table[i]] = static_cast<unsigned char>(i);
             }
         }
         unsigned int siz;
 
         read(in, siz);
 
-        std::string bits;
+        std::pair<int, int> bits = {0, 0};
+
         while (siz > 0) {
             unsigned int buf[BLOCK_SIZE / 4];
             in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE);
@@ -133,10 +141,13 @@ namespace huffman {
             std::string ans;
             for (size_t i = 0; i < len && siz > 0; i++) {
                 for (size_t cnt = 31; cnt + 1 > 0 && siz > 0; cnt--) {
-                    bits += ((buf[i] >> cnt) & 1) ? "1" : "0";
+                    bits.first <<= 1;
+                    bits.first += (buf[i] >> cnt) & 1;
+                    bits.second++;
                     if (map_table.find(bits) != map_table.end()) {
+                        ans += map_table[bits];
                         out.write(reinterpret_cast<const char *>(&map_table[bits]), sizeof(map_table[bits]));
-                        bits = "";
+                        bits = {0, 0};
                         siz--;
                     }
                 }
