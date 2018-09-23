@@ -1,6 +1,5 @@
 #include <iostream>
 #include "huffman.h"
-#include <map>
 #include <fstream>
 #include <cstring>
 
