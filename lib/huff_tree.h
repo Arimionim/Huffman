@@ -8,19 +8,21 @@
 #ifndef HUFFMAN2_HUFF_TREE_H
 #define HUFFMAN2_HUFF_TREE_H
 
-struct huff_tree{
-    void makeTable(unsigned int a[], std::pair<int, int>*);
+struct huff_tree {
+    void makeTable(uint64_t a[], std::pair<uint64_t, int> *);
 
 private:
-    struct node{
+    struct node {
         node *left;
         node *right;
         unsigned int num;
     };
 
-    void dfs(node *, std::pair<int, int> *, std::pair<int, int> const &);
+    unsigned int FALSE_CHAR = 300;
 
-    std::priority_queue<std::pair<std::pair<unsigned int, unsigned int>, node*>> queue;
+    void dfs(node *, std::pair<uint64_t, int> *, std::pair<uint64_t, int> const &);
+
+    std::priority_queue<std::pair<std::pair<uint64_t, uint32_t>, node *>> queue;
 };
 
 #endif //HUFFMAN2_HUFF_TREE_H
