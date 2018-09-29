@@ -18,7 +18,7 @@ private:
         unsigned int num;
     };
 
-    unsigned int FALSE_CHAR = 300;
+    static const unsigned int FALSE_CHAR = 300;
 
     void dfs(node *, std::pair<uint64_t, int> *, std::pair<uint64_t, int> const &);
 

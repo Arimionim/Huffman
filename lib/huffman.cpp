@@ -15,7 +15,7 @@ namespace huffman {
         void writeSymbFreq(std::ostream &out, uint64_t *freq) {
             for (size_t i = 0; i < CNT_ALPH_SYMB; i++) {
                 if (freq[i] > 0) {
-                    out.write(reinterpret_cast<const char *>(&i), sizeof(char));
+                    out.put(static_cast<unsigned char>(i));
                     out.write(reinterpret_cast<const char *>(&freq[i]), sizeof(freq[i]));
                 }
             }
@@ -43,8 +43,9 @@ namespace huffman {
                         pushCodeInUINT64(tmp, size, table[buf[i]].second, table[buf[i]].first);
                     } else {
                         tmp <<= (sizeof(tmp) * 8 - size);
-                        if (size != sizeof(tmp) * 8)
+                        if (size != sizeof(tmp) * 8) {
                             tmp += (table[buf[i]].first >> (table[buf[i]].second - (sizeof(tmp) * 8 - size)));
+                        }
                         edge = table[buf[i]].second - (sizeof(tmp) * 8 - size);
                         out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
                         tmp = 0;
@@ -162,6 +163,9 @@ namespace huffman {
 
         std::pair<uint64_t, int> bits = {0, 0};
 
+        uint64_t check_sum[CNT_ALPH_SYMB];
+        std::fill(check_sum, check_sum + CNT_ALPH_SYMB, 0);
+
 
         while (siz > 0) {
             uint64_t buf[BLOCK_SIZE / sizeof(uint64_t)];
@@ -180,10 +184,16 @@ namespace huffman {
                     bits.first += (buf[i] >> cnt) & 1;
                     bits.second++;
                     if (trySymb(out, map_table, bits)) {
+                        check_sum[map_table[bits]]++;
                         bits = {0, 0};
                         siz--;
                     }
                 }
+            }
+        }
+        for (size_t i = 0; i < CNT_ALPH_SYMB; i++){
+            if (check_sum[i] != freq[i]){
+                throw std::runtime_error(std::string("Error in check ans. Checksum not equal to freq"));
             }
         }
     }
