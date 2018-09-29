@@ -12,11 +12,21 @@ namespace huffman {
             throw std::runtime_error(std::string("Input is invalid"));
         }
 
+        template<typename T>
+        void writeOneNumber(std::ostream &out, T const &v) {
+            T mask = 255;
+            for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--){
+                out << static_cast<uint8_t >((v >> (i * 8)) & mask);
+                out.flush();
+            }
+        }
+
         void writeSymbFreq(std::ostream &out, uint64_t *freq) {
             for (size_t i = 0; i < CNT_ALPH_SYMB; i++) {
                 if (freq[i] > 0) {
-                    out.put(static_cast<unsigned char>(i));
-                    out.write(reinterpret_cast<const char *>(&freq[i]), sizeof(freq[i]));
+
+                    writeOneNumber(out, static_cast<unsigned char>(i));
+                    writeOneNumber(out, freq[i]);
                 }
             }
         }
@@ -88,10 +98,17 @@ namespace huffman {
 
         template<typename T>
         void readOneNumber(std::istream &in, T &v) {
-            in.read(reinterpret_cast<char *>(&v), sizeof(v));
-            if (static_cast<size_t >(in.gcount()) < sizeof(v)) {
-                error();
+            v = 0;
+            for (size_t i = sizeof(T) - 1; i + 1 >= 1; i--){
+                char tmp1;
+                in.get(tmp1);
+                auto tmp = static_cast<unsigned char>((tmp1 < 0) ? 256 + tmp1 : tmp1);
+                v <<= 8;
+                v += tmp;
             }
+    //        if (static_cast<size_t >(in.gcount()) < sizeof(v)) {
+     //           error();
+      //      }
         }
 
         bool trySymb(std::ostream &out, std::map<std::pair<uint64_t, int>, unsigned char> &map_table,
@@ -120,11 +137,13 @@ namespace huffman {
             cnt_symb += (i != 0);
         }
 
-        out.write(reinterpret_cast<const char *>(&cnt_symb), sizeof(cnt_symb));
+        writeOneNumber(out, cnt_symb);
+
+
+        writeOneNumber(out, full_len);
 
         writeSymbFreq(out, freq);
 
-        out.write(reinterpret_cast<const char *>(&full_len), sizeof(full_len));
 
         in.clear();
         in.seekg(0, std::ios::beg);
@@ -135,12 +154,15 @@ namespace huffman {
     void decompress(std::istream &in, std::ostream &out) {
         uint32_t cnt_syb;
         readOneNumber(in, cnt_syb);
+        uint64_t siz;
+
+        readOneNumber(in, siz);
         uint64_t freq[CNT_ALPH_SYMB];
         std::fill(freq, freq + CNT_ALPH_SYMB, 0);
 
         for (uint32_t i = 0; i < cnt_syb; i++) {
-            unsigned char symb;
-            uint64_t cnt;
+            unsigned char symb = 0;
+            uint64_t cnt = 0;
             readOneNumber(in, symb);
             readOneNumber(in, cnt);
 
@@ -157,9 +179,7 @@ namespace huffman {
                 map_table[table[i]] = static_cast<unsigned char>(i);
             }
         }
-        uint64_t siz;
 
-        readOneNumber(in, siz);
 
         std::pair<uint64_t, int> bits = {0, 0};
 
@@ -193,7 +213,7 @@ namespace huffman {
         }
         for (size_t i = 0; i < CNT_ALPH_SYMB; i++){
             if (check_sum[i] != freq[i]){
-                throw std::runtime_error(std::string("Error in check ans. Checksum not equal to freq"));
+                throw std::runtime_error(std::string("Error in check decoded file. Checksum freqs are not equals"));
             }
         }
     }

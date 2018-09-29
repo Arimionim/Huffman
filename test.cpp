@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
         cnt[i - 1] = static_cast<unsigned int>(std::stoi(argv[i]));
     }
     for (int i = 0; i < argc - 1; i++){
-        gen(cnt[i], "in.txt");
+       // gen(cnt[i], "in.txt");
 
         clock_t begin = clock();
         compress("in.txt", "out.txt");
