@@ -13,10 +13,17 @@ namespace huffman {
         }
 
         template<typename T>
-        void writeOneNumber(std::ostream &out, T const &v) {
+        void writeOneNumber(std::ostream &out, T const &v, bool reversed = false) {
             T mask = 255;
-            for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--){
-                out << static_cast<uint8_t >((v >> (i * 8)) & mask);
+            if (!reversed) {
+                for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--) {
+                    out << static_cast<uint8_t >((v >> (i * 8)) & mask);
+                }
+            }
+            else{
+                for (size_t i = 0; i < sizeof(v); i++) {
+                    out << static_cast<uint8_t >((v >> (i * 8)) & mask);
+                }
             }
         }
 
@@ -55,7 +62,7 @@ namespace huffman {
                             tmp += (table[buf[i]].first >> (table[buf[i]].second - (sizeof(tmp) * 8 - size)));
                         }
                         edge = table[buf[i]].second - (sizeof(tmp) * 8 - size);
-                        out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
+                        writeOneNumber(out, tmp);
                         tmp = 0;
                         for (size_t j = 0; j < edge; j++) {
                             tmp += table[buf[i]].first & (1 << j);
@@ -66,8 +73,8 @@ namespace huffman {
             } while (len > 0);
             if (size != 0) {
                 tmp <<= (sizeof(tmp) * 8 - size);
-                out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
-            }
+                writeOneNumber(out, tmp);
+                }
         }
 
         uint64_t fillFreq(std::istream &in, uint64_t *const freq) {
@@ -182,7 +189,7 @@ namespace huffman {
 
 
         while (siz > 0) {
-            uint64_t buf[BLOCK_SIZE / sizeof(uint64_t)];
+            char buf[BLOCK_SIZE];
             in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE);
             uint64_t len;
             len = static_cast<uint32_t>(in.gcount());
@@ -190,7 +197,7 @@ namespace huffman {
             if (len == 0) {
                 error();
             }
-            len /= sizeof(uint64_t);
+            //len /= sizeof(uint64_t);
 
             for (size_t i = 0; i < len && siz > 0; i++) {
                 for (size_t cnt = sizeof(buf[i]) * 8 - 1; cnt + 1 > 0 && siz > 0; cnt--) {
