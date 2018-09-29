@@ -17,14 +17,12 @@ namespace huffman {
             T mask = 255;
             for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--){
                 out << static_cast<uint8_t >((v >> (i * 8)) & mask);
-                out.flush();
             }
         }
 
         void writeSymbFreq(std::ostream &out, uint64_t *freq) {
             for (size_t i = 0; i < CNT_ALPH_SYMB; i++) {
                 if (freq[i] > 0) {
-
                     writeOneNumber(out, static_cast<unsigned char>(i));
                     writeOneNumber(out, freq[i]);
                 }
@@ -106,9 +104,6 @@ namespace huffman {
                 v <<= 8;
                 v += tmp;
             }
-    //        if (static_cast<size_t >(in.gcount()) < sizeof(v)) {
-     //           error();
-      //      }
         }
 
         bool trySymb(std::ostream &out, std::map<std::pair<uint64_t, int>, unsigned char> &map_table,
@@ -138,7 +133,6 @@ namespace huffman {
         }
 
         writeOneNumber(out, cnt_symb);
-
 
         writeOneNumber(out, full_len);
 
