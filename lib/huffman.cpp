@@ -12,6 +12,10 @@ namespace huffman {
             throw std::runtime_error(std::string("Input is invalid"));
         }
 
+        void error(std::string const &errorText) {
+            throw std::runtime_error(std::string(errorText));
+        }
+
         template<typename T>
         void writeOneNumber(std::ostream &out, T const &v, bool reversed = false) {
             T mask = 255;
@@ -19,8 +23,7 @@ namespace huffman {
                 for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--) {
                     out << static_cast<uint8_t >((v >> (i * 8)) & mask);
                 }
-            }
-            else{
+            } else {
                 for (size_t i = 0; i < sizeof(v); i++) {
                     out << static_cast<uint8_t >((v >> (i * 8)) & mask);
                 }
@@ -36,6 +39,28 @@ namespace huffman {
             }
         }
 
+        template<typename T>
+        void readOneNumber(std::istream &in, T &v) {
+            v = 0;
+            for (size_t i = sizeof(T) - 1; i + 1 >= 1; i--) {
+                char tmp1;
+                in.get(tmp1);
+                auto tmp = static_cast<unsigned char>((tmp1 < 0) ? 256 + tmp1 : tmp1);
+                v <<= 8;
+                v += tmp;
+            }
+        }
+
+        template<typename T>
+        uint64_t readBlock(std::istream &in, T *buf) {
+            (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE / sizeof(T)));
+            auto len = static_cast<uint64_t >(in.gcount());
+            if (len < 0) {
+                error("Can't read block");
+            }
+            return len;
+        }
+
         void pushCodeInUINT64(uint64_t &tmp, uint32_t &size, const int codeSize, const uint64_t code) {
             tmp <<= codeSize;
             tmp += code;
@@ -46,12 +71,11 @@ namespace huffman {
             uint64_t tmp = 0;
             uint32_t edge = 0;
             uint32_t size = 0;
-            uint32_t len;
+            uint64_t len;
             unsigned char buf[BLOCK_SIZE];
 
             do {
-                (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE));
-                len = static_cast<size_t>(in.gcount());
+                len = readBlock(in, buf);
 
                 for (size_t i = 0; i < len; ++i) {
                     if (size + table[buf[i]].second <= sizeof(tmp) * 8) {
@@ -62,7 +86,7 @@ namespace huffman {
                             tmp += (table[buf[i]].first >> (table[buf[i]].second - (sizeof(tmp) * 8 - size)));
                         }
                         edge = table[buf[i]].second - (sizeof(tmp) * 8 - size);
-                        writeOneNumber(out, tmp);
+                        out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
                         tmp = 0;
                         for (size_t j = 0; j < edge; j++) {
                             tmp += table[buf[i]].first & (1 << j);
@@ -71,19 +95,19 @@ namespace huffman {
                     }
                 }
             } while (len > 0);
+
             if (size != 0) {
                 tmp <<= (sizeof(tmp) * 8 - size);
-                writeOneNumber(out, tmp);
-                }
+                out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
+            }
         }
 
         uint64_t fillFreq(std::istream &in, uint64_t *const freq) {
             unsigned char buf[BLOCK_SIZE];
-            uint64_t len, full_len = 0;
+            uint64_t full_len = 0, len;
 
             do {
-                (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE));
-                len = static_cast<size_t>(in.gcount());
+                len = readBlock(in, buf);
                 full_len += len;
 
                 for (size_t i = 0; i < len; i++) {
@@ -99,18 +123,6 @@ namespace huffman {
                 throw std::runtime_error(std::string("Error in fillFreq. Checksum not equal to full length"));
             }
             return full_len;
-        }
-
-        template<typename T>
-        void readOneNumber(std::istream &in, T &v) {
-            v = 0;
-            for (size_t i = sizeof(T) - 1; i + 1 >= 1; i--){
-                char tmp1;
-                in.get(tmp1);
-                auto tmp = static_cast<unsigned char>((tmp1 < 0) ? 256 + tmp1 : tmp1);
-                v <<= 8;
-                v += tmp;
-            }
         }
 
         bool trySymb(std::ostream &out, std::map<std::pair<uint64_t, int>, unsigned char> &map_table,
@@ -189,15 +201,14 @@ namespace huffman {
 
 
         while (siz > 0) {
-            char buf[BLOCK_SIZE];
-            in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE);
+            uint64_t buf[BLOCK_SIZE / sizeof(uint64_t)];
             uint64_t len;
-            len = static_cast<uint32_t>(in.gcount());
+            len = readBlock(in, buf);
 
             if (len == 0) {
                 error();
             }
-            //len /= sizeof(uint64_t);
+            len /= sizeof(uint64_t);
 
             for (size_t i = 0; i < len && siz > 0; i++) {
                 for (size_t cnt = sizeof(buf[i]) * 8 - 1; cnt + 1 > 0 && siz > 0; cnt--) {
@@ -212,8 +223,8 @@ namespace huffman {
                 }
             }
         }
-        for (size_t i = 0; i < CNT_ALPH_SYMB; i++){
-            if (check_sum[i] != freq[i]){
+        for (size_t i = 0; i < CNT_ALPH_SYMB; i++) {
+            if (check_sum[i] != freq[i]) {
                 throw std::runtime_error(std::string("Error in check decoded file. Checksum freqs are not equals"));
             }
         }
