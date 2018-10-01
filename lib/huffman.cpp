@@ -53,12 +53,18 @@ namespace huffman {
 
         template<typename T>
         uint64_t readBlock(std::istream &in, T *buf) {
-            (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE / sizeof(T)));
-            auto len = static_cast<uint64_t >(in.gcount());
+            int64_t len = 0;
+            try{
+                (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE / sizeof(T)));
+                len = static_cast<int64_t >(in.gcount());
+            }
+            catch(const std::exception& e){
+                error("Can't read block");
+            }
             if (len < 0) {
                 error("Can't read block");
             }
-            return len;
+            return static_cast<uint64_t>(len);
         }
 
         void pushCodeInUINT64(uint64_t &tmp, uint32_t &size, const int codeSize, const uint64_t code) {
