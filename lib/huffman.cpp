@@ -94,8 +94,8 @@ namespace huffman {
                         edge = table[buf[i]].second - (sizeof(tmp) * 8 - size);
                         out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
                         tmp = 0;
-                        for (size_t j = 0; j < edge; j++) {
-                            tmp += table[buf[i]].first & (1 << j);
+                        if (edge != sizeof(table[buf[i]].first) * 8){
+                            tmp += (table[buf[i]].first << (sizeof(table[buf[i]].first) * 8 - edge)) >> (sizeof(table[buf[i]].first) * 8 - edge);
                         }
                         size = edge;
                     }
@@ -124,9 +124,6 @@ namespace huffman {
 
             for (uint32_t i = 0; i < CNT_ALPH_SYMB; i++) {
                 check += freq[i];
-            }
-            if (check != full_len) {
-                throw std::runtime_error(std::string("Error in fillFreq. Checksum not equal to full length"));
             }
             return full_len;
         }
