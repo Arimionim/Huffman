@@ -9,6 +9,8 @@
 #define HUFFMAN2_HUFF_TREE_H
 
 struct huff_tree {
+    ~huff_tree();
+
     struct node {
         node *left;
         node *right;
