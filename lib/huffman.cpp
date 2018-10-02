@@ -48,7 +48,7 @@ namespace huffman {
         uint64_t readBlock(std::istream &in, T *buf, size_t const size = BLOCK_SIZE) {
             int64_t len = 0;
             try {
-                (in.read(reinterpret_cast<char *>(buf), size));
+                in.read(reinterpret_cast<char *>(buf), size);
                 len = static_cast<int64_t >(in.gcount());
             }
             catch (const std::exception &e) {

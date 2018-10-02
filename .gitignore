@@ -1,0 +1,6 @@
+# Файлы для тестов:
+/test_files/
+
+/cmake-build-debug/
+
+/cmake-build-release/
