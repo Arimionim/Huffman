@@ -83,7 +83,8 @@ namespace huffman {
                         uint32_t freeCap = sizeof(tmp) * 8 - size;
                         edge = table[buf[i]].second - freeCap;
                         pushCodeInUINT64(tmp, size, freeCap, table[buf[i]].first >> (table[buf[i]].second - freeCap));
-                        out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
+                        writeOneNumber(out, tmp);
+                        //  out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
                         tmp = table[buf[i]].first & ((static_cast<uint64_t >(1) << (edge + 1)) - 1);
                         size = edge;
                     }
@@ -92,7 +93,8 @@ namespace huffman {
 
             if (size != 0) {
                 tmp <<= (sizeof(tmp) * 8 - size);
-                out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
+                writeOneNumber(out, tmp);
+                //    out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
             }
         }
 
@@ -168,15 +170,13 @@ namespace huffman {
 
 
         while (siz > 0) {
-            uint64_t buf[BLOCK_SIZE / sizeof(uint64_t)];
+            unsigned char buf[BLOCK_SIZE];
             uint64_t len;
-            len = readBlock(in, buf, BLOCK_SIZE / sizeof(uint64_t));
+            len = readBlock(in, buf);
 
             if (len == 0) {
                 error();
             }
-
-            len /= sizeof(uint64_t);
 
             for (size_t i = 0; i < len && siz > 0; i++) {
                 for (size_t cnt = sizeof(buf[i]) * 8 - 1; cnt + 1 > 0 && siz > 0; cnt--) {
