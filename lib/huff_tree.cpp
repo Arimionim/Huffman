@@ -18,7 +18,7 @@ void huff_tree::makeTable(uint64_t freq[], std::pair<uint64_t, int> *const m) {
 
 huff_tree::node *huff_tree::makeTree(uint64_t freq[]) {
     buildQueue(freq);
-    return queue.top().second;
+    return queue.empty() ? nullptr : queue.top().second;
 }
 
 void huff_tree::deleteTree(huff_tree::node *node) {
