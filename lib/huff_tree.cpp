@@ -15,12 +15,12 @@ huff_tree::node *huff_tree::makeTree(uint64_t freq[]) {
 }
 
 void huff_tree::deleteTree(huff_tree::node *node) {
-    if (!node){
+    if (!node) {
         return;
     }
     deleteTree(node->left);
     deleteTree(node->right);
-    delete(node);
+    delete (node);
 }
 
 void huff_tree::buildQueue(uint64_t freq[]) {

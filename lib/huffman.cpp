@@ -194,7 +194,7 @@ namespace huffman {
                 }
             }
         }
-      //  tree.deleteTree(root);
+        //  tree.deleteTree(root);
         for (size_t i = 0; i < CNT_ALPH_SYMB; i++) {
             if (check_sum[i] != freq[i]) {
                 throw std::runtime_error(std::string("Error in check decoded file. Checksum freqs are not equals"));
