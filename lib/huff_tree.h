@@ -21,6 +21,8 @@ struct huff_tree {
 
     static const unsigned int FALSE_CHAR = 300;
 
+    static void deleteTree(node *node);
+
 private:
     void fillTable(node *, std::pair<uint64_t, int> *, std::pair<uint64_t, int> const &);
 

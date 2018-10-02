@@ -5,6 +5,7 @@ void huff_tree::makeTable(uint64_t freq[], std::pair<uint64_t, int> *const m) {
     buildQueue(freq);
     if (!queue.empty()) {
         fillTable(queue.top().second, m, {0, 0});
+        deleteTree(queue.top().second);
     }
 }
 
@@ -13,9 +14,17 @@ huff_tree::node *huff_tree::makeTree(uint64_t freq[]) {
     return queue.top().second;
 }
 
+void huff_tree::deleteTree(huff_tree::node *node) {
+    if (!node){
+        return;
+    }
+    deleteTree(node->left);
+    deleteTree(node->right);
+    delete(node);
+}
+
 void huff_tree::buildQueue(uint64_t freq[]) {
     uint32_t cnt = 0;
-    huff_tree::queue.push({{UINT64_MAX, UINT32_MAX}, new node({nullptr, nullptr, 300})});
     for (uint32_t i = 0; i < 256; i++) {
         if (freq[i] != 0) {
             ++cnt;
@@ -43,5 +52,5 @@ void huff_tree::fillTable(node *v, std::pair<uint64_t, int> *m, std::pair<uint64
     }
     fillTable(v->left, m, {key.first * 2, key.second + 1});
     fillTable(v->right, m, {key.first * 2 + 1, key.second + 1});
-    delete (v);
 }
+
