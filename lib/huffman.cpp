@@ -17,16 +17,9 @@ namespace huffman {
         }
 
         template<typename T>
-        void writeOneNumber(std::ostream &out, T const &v, bool reversed = false) {
-            T mask = 255;
-            if (!reversed) {
-                for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--) {
-                    out << static_cast<uint8_t >((v >> (i * 8)) & mask);
-                }
-            } else {
-                for (size_t i = 0; i < sizeof(v); i++) {
-                    out << static_cast<uint8_t >((v >> (i * 8)) & mask);
-                }
+        void writeOneNumber(std::ostream &out, T const &v) {
+            for (size_t i = sizeof(v) - 1; i + 1 >= 1; i--) {
+                out << static_cast<uint8_t >((v >> (i * 8)) & 255);
             }
         }
 
@@ -52,13 +45,13 @@ namespace huffman {
         }
 
         template<typename T>
-        uint64_t readBlock(std::istream &in, T *buf) {
+        uint64_t readBlock(std::istream &in, T *buf, size_t const size = BLOCK_SIZE) {
             int64_t len = 0;
-            try{
-                (in.read(reinterpret_cast<char *>(buf), BLOCK_SIZE / sizeof(T)));
+            try {
+                (in.read(reinterpret_cast<char *>(buf), size));
                 len = static_cast<int64_t >(in.gcount());
             }
-            catch(const std::exception& e){
+            catch (const std::exception &e) {
                 error("Can't read block");
             }
             if (len < 0) {
@@ -87,16 +80,11 @@ namespace huffman {
                     if (size + table[buf[i]].second <= sizeof(tmp) * 8) {
                         pushCodeInUINT64(tmp, size, table[buf[i]].second, table[buf[i]].first);
                     } else {
-                        tmp <<= (sizeof(tmp) * 8 - size);
-                        if (size != sizeof(tmp) * 8) {
-                            tmp += (table[buf[i]].first >> (table[buf[i]].second - (sizeof(tmp) * 8 - size)));
-                        }
-                        edge = table[buf[i]].second - (sizeof(tmp) * 8 - size);
+                        uint32_t freeCap = sizeof(tmp) * 8 - size;
+                        edge = table[buf[i]].second - freeCap;
+                        pushCodeInUINT64(tmp, size, freeCap, table[buf[i]].first >> (table[buf[i]].second - freeCap));
                         out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
-                        tmp = 0;
-                        if (edge != sizeof(table[buf[i]].first) * 8){
-                            tmp += (table[buf[i]].first << (sizeof(table[buf[i]].first) * 8 - edge)) >> (sizeof(table[buf[i]].first) * 8 - edge);
-                        }
+                        tmp = table[buf[i]].first & ((static_cast<uint64_t >(1) << (edge + 1)) - 1);
                         size = edge;
                     }
                 }
@@ -115,26 +103,12 @@ namespace huffman {
             do {
                 len = readBlock(in, buf);
                 full_len += len;
-
                 for (size_t i = 0; i < len; i++) {
                     freq[buf[i]]++;
                 }
             } while (len != 0);
-            uint64_t check = 0;
 
-            for (uint32_t i = 0; i < CNT_ALPH_SYMB; i++) {
-                check += freq[i];
-            }
             return full_len;
-        }
-
-        bool trySymb(std::ostream &out, std::map<std::pair<uint64_t, int>, unsigned char> &map_table,
-                     std::pair<uint64_t, int> bits) {
-            if (map_table.find(bits) != map_table.end()) {
-                out.write(reinterpret_cast<const char *>(&map_table[bits]), sizeof(map_table[bits]));
-                return true;
-            }
-            return false;
         }
     }
 
@@ -185,19 +159,9 @@ namespace huffman {
             freq[symb] = cnt;
         }
 
-        std::pair<uint64_t, int> table[CNT_ALPH_SYMB];
         huff_tree tree;
-        tree.makeTable(freq, table);
-        std::map<std::pair<uint64_t, int>, unsigned char> map_table;
-
-        for (uint32_t i = 0; i < CNT_ALPH_SYMB; i++) {
-            if (freq[i] != 0) {
-                map_table[table[i]] = static_cast<unsigned char>(i);
-            }
-        }
-
-
-        std::pair<uint64_t, int> bits = {0, 0};
+        huff_tree::node *root = tree.makeTree(freq);
+        huff_tree::node *now = root;
 
         uint64_t check_sum[CNT_ALPH_SYMB];
         std::fill(check_sum, check_sum + CNT_ALPH_SYMB, 0);
@@ -206,21 +170,25 @@ namespace huffman {
         while (siz > 0) {
             uint64_t buf[BLOCK_SIZE / sizeof(uint64_t)];
             uint64_t len;
-            len = readBlock(in, buf);
+            len = readBlock(in, buf, BLOCK_SIZE / sizeof(uint64_t));
 
             if (len == 0) {
                 error();
             }
+
             len /= sizeof(uint64_t);
 
             for (size_t i = 0; i < len && siz > 0; i++) {
                 for (size_t cnt = sizeof(buf[i]) * 8 - 1; cnt + 1 > 0 && siz > 0; cnt--) {
-                    bits.first <<= 1;
-                    bits.first += (buf[i] >> cnt) & 1;
-                    bits.second++;
-                    if (trySymb(out, map_table, bits)) {
-                        check_sum[map_table[bits]]++;
-                        bits = {0, 0};
+                    if (now->right && (buf[i] >> cnt) & 1) {
+                        now = now->right;
+                    } else if (now->left) {
+                        now = now->left;
+                    }
+                    if (now->num != huff_tree::FALSE_CHAR) {
+                        out << static_cast<unsigned char>(now->num);
+                        check_sum[now->num]++;
+                        now = root;
                         siz--;
                     }
                 }
