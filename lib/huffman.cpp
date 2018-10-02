@@ -35,7 +35,8 @@ namespace huffman {
         template<typename T>
         void readOneNumber(std::istream &in, T &v) {
             v = 0;
-            for (size_t i = sizeof(T) - 1; i + 1 >= 1; i--) {
+            size_t size = sizeof(T);
+            for (size_t i = size - 1; i + 1 >= 1; --i) {
                 char tmp1;
                 in.get(tmp1);
                 auto tmp = static_cast<unsigned char>((tmp1 < 0) ? 256 + tmp1 : tmp1);
@@ -69,8 +70,6 @@ namespace huffman {
 
         void writeCompressedText(std::istream &in, std::ostream &out, std::pair<uint64_t, int> *table) {
             uint64_t tmp = 0;
-            std::ios::fixed;
-            out.precision(sizeof(tmp) * 8);
             uint32_t edge = 0;
             uint32_t size = 0;
             uint64_t len;
