@@ -45,8 +45,9 @@ namespace huffman {
         }
 
         template<typename T>
-        uint64_t readBlock(std::istream &in, T *buf, size_t const size = BLOCK_SIZE) {
+        uint64_t readBlock(std::istream &in, T *buf, size_t const count = BLOCK_SIZE) {
             int64_t len = 0;
+            size_t const size = count * sizeof(T);
             try {
                 in.read(reinterpret_cast<char *>(buf), size);
                 len = static_cast<int64_t >(in.gcount());
@@ -68,6 +69,8 @@ namespace huffman {
 
         void writeCompressedText(std::istream &in, std::ostream &out, std::pair<uint64_t, int> *table) {
             uint64_t tmp = 0;
+            std::ios::fixed;
+            out.precision(sizeof(tmp) * 8);
             uint32_t edge = 0;
             uint32_t size = 0;
             uint64_t len;
@@ -84,7 +87,6 @@ namespace huffman {
                         edge = table[buf[i]].second - freeCap;
                         pushCodeInUINT64(tmp, size, freeCap, table[buf[i]].first >> (table[buf[i]].second - freeCap));
                         writeOneNumber(out, tmp);
-                        //  out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
                         tmp = table[buf[i]].first & ((static_cast<uint64_t >(1) << (edge + 1)) - 1);
                         size = edge;
                     }
@@ -94,7 +96,6 @@ namespace huffman {
             if (size != 0) {
                 tmp <<= (sizeof(tmp) * 8 - size);
                 writeOneNumber(out, tmp);
-                //    out.write(reinterpret_cast<const char *>(&tmp), sizeof(tmp));
             }
         }
 
