@@ -46,12 +46,19 @@ namespace huffman {
         }
 
         template<typename T>
-        uint64_t readBlock(std::istream &in, T *buf, size_t const count = BLOCK_SIZE) {
+        uint64_t readBlock(std::istream &in, T *buf, uint64_t const count = BLOCK_SIZE) {
             int64_t len = 0;
-            size_t const size = count * sizeof(T);
+            auto const size = static_cast<const size_t>(count * sizeof(T));
             try {
-                in.read(reinterpret_cast<char *>(buf), size);
-                len = static_cast<int64_t >(in.gcount());
+                int64_t last;
+                do {
+                    in.read(reinterpret_cast<char *>(buf + len), static_cast<std::streamsize>(size - len));
+                    last = static_cast<int64_t >(in.gcount());
+                    if (last < 0){
+                        error();
+                    }
+                    len += last;
+                } while (last != 0 && len < size);
             }
             catch (const std::exception &e) {
                 error("Can't read block");
@@ -85,7 +92,8 @@ namespace huffman {
                         uint32_t freeCap = sizeof(tmp) * 8 - size;
                         edge = table[buf[i]].second - freeCap;
                         pushCodeInUINT64(tmp, size, freeCap, table[buf[i]].first >> (table[buf[i]].second - freeCap));
-                        writeOneNumber(out, tmp);
+                        out.write(reinterpret_cast<char * >(&tmp), sizeof(tmp));
+                        //writeOneNumber(out, tmp); //it writes in big endian, use for test
                         tmp = table[buf[i]].first & ((static_cast<uint64_t >(1) << (edge + 1)) - 1);
                         size = edge;
                     }
@@ -94,7 +102,8 @@ namespace huffman {
 
             if (size != 0) {
                 tmp <<= (sizeof(tmp) * 8 - size);
-                writeOneNumber(out, tmp);
+                //writeOneNumber(out, tmp);
+                out.write(reinterpret_cast<char* >(&tmp), sizeof(tmp));
             }
         }
 
@@ -112,9 +121,31 @@ namespace huffman {
 
             return full_len;
         }
+
+        uint64_t countBytes(const uint64_t freq[256], std::pair<uint64_t, int> table[256]) {
+            uint64_t cntBits = 0;
+            for (int i = 0; i < 256; i++){
+                cntBits += freq[i] * table[i].second;
+            }
+            return (cntBits % 8) ? (cntBits / 8 + 1) : (cntBits / 8);
+        }
+
+        void reverseUint64_t(uint64_t &num){
+            unsigned char bytes[sizeof(uint64_t)];
+            for (int j = 0; j < sizeof(uint64_t); j++){
+                bytes[j] = static_cast<unsigned char>((num >> (j * 8)) & (255));
+            }
+            num = 0;
+            for (unsigned char byte : bytes) {
+                num <<= 8;
+                num += byte;
+            }
+        }
     }
 
-    void compress(std::istream &in, std::ostream &out) {
+    // false = little endian, true = big endian
+    void compress(std::istream &in, std::ostream &out, const bool endian = false) {
+        writeOneNumber(out, endian);
         uint64_t freq[CNT_ALPH_SYMB];
         std::fill(freq, freq + CNT_ALPH_SYMB, 0);
 
@@ -136,6 +167,9 @@ namespace huffman {
 
         writeSymbFreq(out, freq);
 
+        uint64_t totalBytes = countBytes(freq, table);
+
+        writeOneNumber(out, totalBytes);
 
         in.clear();
         in.seekg(0, std::ios::beg);
@@ -144,6 +178,8 @@ namespace huffman {
     }
 
     void decompress(std::istream &in, std::ostream &out) {
+        bool endian = false;
+        readOneNumber(in, endian);
         uint32_t cnt_syb;
         readOneNumber(in, cnt_syb);
         uint64_t siz;
@@ -168,14 +204,26 @@ namespace huffman {
         uint64_t check_sum[CNT_ALPH_SYMB];
         std::fill(check_sum, check_sum + CNT_ALPH_SYMB, 0);
 
+        uint64_t totalBytes = 0;
+        readOneNumber(in, totalBytes);
 
         while (siz > 0) {
-            unsigned char buf[BLOCK_SIZE];
-            uint64_t len;
-            len = readBlock(in, buf);
+            uint64_t const NEW_BLOCK_SIZE = BLOCK_SIZE < totalBytes ? BLOCK_SIZE : totalBytes;
+            totalBytes -= NEW_BLOCK_SIZE;
 
-            if (len == 0) {
+            uint64_t buf[NEW_BLOCK_SIZE / sizeof(uint64_t)];
+            uint64_t len = readBlock(in, buf, NEW_BLOCK_SIZE / sizeof(uint64_t));
+
+            if (len < NEW_BLOCK_SIZE){
                 error();
+            }
+
+            len /= sizeof(uint64_t);
+
+            if (endian) {
+                for (int i = 0; i < len; i++) {
+                   reverseUint64_t(buf[i]);
+                }
             }
 
             for (size_t i = 0; i < len && siz > 0; i++) {

@@ -9,7 +9,15 @@ int main(int argc, char *argv[]) {
         COMPRESS, DECOMPRESS
     };
 
-    if (argc != 4) {
+    if (argc == 2 && argv[1] == "-help"){
+        std::cout << "For use write arguments in this order:" << std::endl
+                  << "-c/-d for compress or decompress "
+                  << "-l/-b if you want to encode in litte or in big endian "
+                  << "name of input file "
+                  << "name of output file" << std::endl;
+    }
+
+    if (argc < 4) {
         std::cerr << "Error: wrong args";
         return 1;
     }
@@ -26,8 +34,25 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::string input_path = argv[2];
-    std::string output_path = argv[3];
+    int nameStarts = 2;
+    bool endian = 0;
+
+    if (argv[nameStarts][0] == '-'){
+        if (argv[nameStarts] == "-b"){
+            endian = true;
+        }
+        else if (argv[nameStarts] == "-l"){
+            endian = false;
+        }
+        else{
+            std::cerr << "Unknown option: " << mode_arg << std::endl;
+            return 1;
+        }
+        nameStarts++;
+    }
+
+    std::string input_path = argv[nameStarts];
+    std::string output_path = argv[nameStarts + 1];
 
     if (input_path == output_path) {
         std::cerr << "Please specify different input and output files" << std::endl;
@@ -45,7 +70,7 @@ int main(int argc, char *argv[]) {
 
         if (mode == COMPRESS) {
             std::cerr << "Starting compressing.." << std::endl;
-            huffman::compress(input_file, output_file);
+            huffman::compress(input_file, output_file, endian);
         } else {
             std::cerr << "Starting decompressing.." << std::endl;
             huffman::decompress(input_file, output_file);
