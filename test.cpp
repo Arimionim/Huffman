@@ -38,7 +38,7 @@ bool check(std::string const & first, std::string const & second){
 void compress(std::string const & first, std::string const & second){
     std::ifstream in(first, std::ios::binary);
     std::ofstream out(second, std::ios::binary);
-    huffman::compress(in, out, false);
+    huffman::compress(in, out);
 }
 
 void decompress(std::string const & first, std::string const & second){

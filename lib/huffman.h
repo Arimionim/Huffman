@@ -7,7 +7,7 @@
 namespace huffman {
     static const int BLOCK_SIZE = 8192;
 
-    void compress(std::istream &, std::ostream &, bool);
+    void compress(std::istream &, std::ostream &);
 
     void decompress(std::istream &, std::ostream &);
  }

@@ -34,25 +34,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    int nameStarts = 2;
-    bool endian = 0;
-
-    if (argv[nameStarts][0] == '-'){
-        if (argv[nameStarts] == "-b"){
-            endian = true;
-        }
-        else if (argv[nameStarts] == "-l"){
-            endian = false;
-        }
-        else{
-            std::cerr << "Unknown option: " << mode_arg << std::endl;
-            return 1;
-        }
-        nameStarts++;
-    }
-
-    std::string input_path = argv[nameStarts];
-    std::string output_path = argv[nameStarts + 1];
+    std::string input_path = argv[2];
+    std::string output_path = argv[3];
 
     if (input_path == output_path) {
         std::cerr << "Please specify different input and output files" << std::endl;
@@ -70,7 +53,7 @@ int main(int argc, char *argv[]) {
 
         if (mode == COMPRESS) {
             std::cerr << "Starting compressing.." << std::endl;
-            huffman::compress(input_file, output_file, endian);
+            huffman::compress(input_file, output_file);
         } else {
             std::cerr << "Starting decompressing.." << std::endl;
             huffman::decompress(input_file, output_file);

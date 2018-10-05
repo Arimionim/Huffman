@@ -60,8 +60,8 @@ void huff_tree::fillTable(node *v, std::pair<uint64_t, int> *m, std::pair<uint64
             m[v->num] = {0, 1};
         }
     }
-    fillTable(v->left, m, {key.first * 2, key.second + 1});
-    fillTable(v->right, m, {key.first * 2 + 1, key.second + 1});
+    fillTable(v->left, m, {key.first, key.second + 1});
+    fillTable(v->right, m, {key.first + (1 << key.second), key.second + 1});
     delete(v);
 }
 
